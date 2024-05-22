@@ -1,7 +1,7 @@
 # DDPM-with-DDIM
 DDPM with the function of DDIM
 
-This project refering ddim(https://github.com/ermongroup/ddim) and DenoisingDiffusionProbabilityModel-ddpm-
+This project refering from ddim(https://github.com/ermongroup/ddim) and DenoisingDiffusionProbabilityModel-ddpm-
 (https://github.com/zoubohao/DenoisingDiffusionProbabilityModel-ddpm-), combines the function to train diffusion 
 model and sample in the way of DDPM and DDIM.
 
