@@ -23,6 +23,12 @@ class DDIM(nn.Module):
         self.betas = torch.from_numpy(betas).float().to('cuda:0')
 
     def sample_image_seq(self, noisyImage):
+        """
+        For now, I have just finished the code of generalized steps,
+        in the mode, you can set the parameter in the file of Main to
+        choose what kind of noisy schedule you want to use.
+        And according to Song Jiaming, it is the mode of uniform and quard
+        """
         if self.sample_type == "generalized":
             if self.skip_type == "uniform":
                 skip = self.T // int(self.sikpped_step)
@@ -38,7 +44,7 @@ class DDIM(nn.Module):
             with torch.no_grad():
                 x0 = generalized_steps(noisyImage, seq, self.model, self.betas, self.eta)
 
-        if self.sample_type == "ddpm_noisy":
+        if self.sample_type == "ddpm_noisy":    # todo: what does it mean?
             if self.skip_type == "uniform":
                 skip = self.T // int(self.sikpped_step)
                 seq = range(1, self.T, skip)
@@ -84,19 +90,10 @@ def eval_ddim(modelConfig: Dict):
             modelConfig["ddim_sampled_dir"], modelConfig["sampledNoisyImgName"]), nrow=modelConfig["nrow"])
         sampledImgs = sampler(noisyImage)
         sampledImgs = sampledImgs * 0.5 + 0.5
-        # 将张量转换回PIL图像
-        # to_pil = transforms.ToPILImage()
-        # sampledImgs = sampledImgs.to('cpu').float()
-        # 使用make_grid函数创建一个网格图像，每行有10张图像
-        # grid = torchvision.utils.make_grid(sampledImgs, nrow=10)
-        # 将张量转换为PIL图像
-        # grid_img = to_pil(grid)
-        # 保存图像
-        # save_path = os.path.join(modelConfig["ddim_sampled_dir"], modelConfig["ddim_sampledImgName"])
-        # grid_img.save(save_path)
         save_image(sampledImgs,
                    os.path.join(modelConfig["ddim_sampled_dir"], modelConfig["ddim_sampledImgName"]),
                    nrow=modelConfig["nrow"])
+
 
 def sample_sequence(num_batches, input_device):
     noisyImage = torch.randn(
@@ -104,11 +101,13 @@ def sample_sequence(num_batches, input_device):
     )
     return noisyImage
 
+
 def sample_fid(num_batches, input_device):
     noisyImage = torch.randn(
         size=[num_batches*100, 3, 32, 32], device=input_device
     )
     return noisyImage
+
 
 def sample_interpolation(device):
     def slerp(z1, z2, alpha):
@@ -126,6 +125,6 @@ def sample_interpolation(device):
     alpha = torch.arange(0.0, 1.01, 0.1).to(z1.device)
     z_ = []
     for i in range(alpha.size(0)):
-        # 根据张量生成插值
+        # according to the tensor to interpolate
         z_.append(slerp(z1, z2, alpha[i]))
     x = torch.cat(z_, dim=0)
