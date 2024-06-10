@@ -16,3 +16,5 @@ work, there will be something bad, and I will modify the relevant comments to ma
 
 Thanks again for the projects of ddim(https://github.com/ermongroup/ddim) and DenoisingDiffusionProbabilityModel-ddpm-
 (https://github.com/zoubohao/DenoisingDiffusionProbabilityModel-ddpm-).
+
+Time permitted, I will upgrade the code.
