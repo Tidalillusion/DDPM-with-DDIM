@@ -1,7 +1,4 @@
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import numpy as np
 
 
 def extract(v, t, x_shape):
@@ -15,10 +12,9 @@ def extract(v, t, x_shape):
     """
     device = t.device
     out = torch.gather(v, index=t, dim=0).float().to(device)
-    # based on the time pointed by, to get the result, out.shape = tensor(80,)
+    # based on the time pointed by, to get the result, eg: out.shape = tensor(80,)
     return out.view([t.shape[0]] + [1] * (len(x_shape) - 1))
-    # [1] * (len(x_shape) - 1)创建了一个列表，列表的长度为x_shape的长度减一，元素为1
-    # the result shape: (80, 1, 1, 1)，即依照时间T选取的
+    # the result shape: (80, 1, 1, 1)，which is chosen by random time from radiant function
 
 
 def generalized_steps(x, seq, model, betas, eta):
@@ -26,8 +22,8 @@ def generalized_steps(x, seq, model, betas, eta):
         seq_next = [-1] + list(seq[:-1])
         alphas = 1. - betas
         alphas_bar = torch.cumprod(alphas, dim=0)
-        # alphas_bar_prev = F.pad(alphas_bar, [1, 0], value=1)[:T]
         for i, j in zip(reversed(seq), reversed(seq_next)):
+            """To prevent the overflow of the list"""
             if j == -1 and i == 1:
                 x = xt_next
                 break
@@ -36,10 +32,17 @@ def generalized_steps(x, seq, model, betas, eta):
             print(f"The skipped step: {i}")
             t = x.new_ones([x.shape[0], ], dtype=torch.long) * i
             t_next = x.new_ones([x.shape[0], ], dtype=torch.long) * j
+
+            """
+            This part is to calculate the parameter and result of DDIM
+            according to Song Jiaming. And how to calculate you can find
+            in https://arxiv.org/abs/2010.02502. If you're good at Chinese,
+            this blog could be a good choice: https://zhuanlan.zhihu.com/p/666552214.
+            """
             x_t_alphas_bar = extract(alphas_bar, t, x.shape)
             x_t_next_alphas_bar = extract(alphas_bar, t_next, x.shape)
             model = model.to("cuda:0")
-            et = model(x, t)
+            et = model(x, t)           # By Song, et=0 or et=variance in DDPM is good choice
             mean = (x - et * (1 - x_t_alphas_bar).sqrt()) / x_t_alphas_bar.sqrt()
             c1 = eta * ((1 - x_t_alphas_bar / x_t_next_alphas_bar)
                         * (1 - x_t_next_alphas_bar) / (1 - x_t_alphas_bar)).sqrt()
@@ -48,10 +51,3 @@ def generalized_steps(x, seq, model, betas, eta):
             x = xt_next
         x_0 = x
     return torch.clip(x_0, -1, 1)
-
-
-
-
-
-
-
