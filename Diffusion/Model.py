@@ -38,7 +38,7 @@ class TimeEmbedding(nn.Module):
 
         self.timembedding = nn.Sequential(
             nn.Embedding.from_pretrained(emb),
-            # 创建一个预训练的嵌入层，其参数为emb
+            # embedding layer, with the parameter emb
             nn.Linear(d_model, dim),
             Swish(),
             nn.Linear(dim, dim),
@@ -93,8 +93,9 @@ class UpSample(nn.Module):
 
 
 class AttnBlock(nn.Module):
-    # 注意力机制模块
-    # 用以捕捉输入特征图中的长距离依赖关系，用于特征图上
+    # attention block, capturing the long distance relationship(relevance in long distance)
+    # The QKV attention block
+    # todo: test the long distance in CIFAR 10
     def __init__(self, in_ch):
         super().__init__()
         self.group_norm = nn.GroupNorm(32, in_ch)
@@ -170,7 +171,7 @@ class ResBlock(nn.Module):
             if isinstance(module, (nn.Conv2d, nn.Linear)):
                 init.xavier_uniform_(module.weight)
                 init.zeros_(module.bias)
-        # gain参数表示缩放因子
+        # gain represents the scale parameter
         init.xavier_uniform_(self.block2[-1].weight, gain=1e-5)
 
     def forward(self, x, temb):
@@ -186,7 +187,6 @@ class ResBlock(nn.Module):
 
 class UNet(nn.Module):
     def __init__(self, T, ch, ch_mult, attn, num_res_blocks, dropout):
-        # T:1000, ch:128, ch_mult:[1,2,3,4], attn:[2], num_res_blocks:2, dropout:0.15
         super().__init__()
         assert all([i < len(ch_mult) for i in attn]), 'attn index out of bound'
         tdim = ch * 4    # 128 * 4
@@ -211,6 +211,7 @@ class UNet(nn.Module):
                 chs.append(now_ch)
 
         # chs:[128, 128, 128, 128, 256, 256, 256, 384, 384, 384, 512, 512]
+        # sorry for my poor memory and the abstract thinking ability
         self.middleblocks = nn.ModuleList([
             ResBlock(now_ch, now_ch, tdim, dropout, attn=True),
             ResBlock(now_ch, now_ch, tdim, dropout, attn=False),
@@ -264,15 +265,4 @@ class UNet(nn.Module):
 
         assert len(hs) == 0
         return h
-
-
-if __name__ == '__main__':
-    batch_size = 8
-    model = UNet(
-        T=1000, ch=128, ch_mult=[1, 2, 2, 2], attn=[1],
-        num_res_blocks=2, dropout=0.1)
-    x = torch.randn(batch_size, 3, 32, 32)
-    t = torch.randint(1000, (batch_size, ))
-    y = model(x, t)
-    print(y.shape)
 
