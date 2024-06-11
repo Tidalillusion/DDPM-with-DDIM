@@ -1,4 +1,3 @@
-
 import os
 from typing import Dict
 
@@ -27,8 +26,8 @@ def train(modelConfig: Dict):
         ]))
     dataloader = DataLoader(
         dataset, batch_size=modelConfig["batch_size"], shuffle=True, num_workers=4, drop_last=True, pin_memory=True)
-    # drop_last : 丢弃非完整批次的图像数据
-    # pin_memory : 数据加载器会在返回之前将张量复制到CUDA固定内存
+    # drop_last : T, then if the data is not for a full batch, drop it
+    # pin_memory : the dataloader will copy the tensor 2 CUDA memory before return
 
     # model setup
     net_model = UNet(T=modelConfig["T"], ch=modelConfig["channel"], ch_mult=modelConfig["channel_mult"], attn=modelConfig["attn"],
@@ -36,13 +35,12 @@ def train(modelConfig: Dict):
     if modelConfig["training_load_weight"] is not None:
         net_model.load_state_dict(torch.load(os.path.join(
             modelConfig["save_weight_dir"], modelConfig["training_load_weight"]), map_location=device))
-    # AdamW是Adam优化器结合了L2正则化的优化结果
+    # AdamW is Adam with L2 regulation
     optimizer = torch.optim.AdamW(
         net_model.parameters(), lr=modelConfig["lr"], weight_decay=1e-4)
-    #  退火余弦的方式进行衰减（优化器、迭代周期、最小学习率、上一个epoch索引（默认为-1不管））
+    # make the lr change according to cos function
     cosineScheduler = optim.lr_scheduler.CosineAnnealingLR(
         optimizer=optimizer, T_max=modelConfig["epoch"], eta_min=0, last_epoch=-1)
-    # 利用渐进式预热与其他方式结合的学习率调度机制（优化器、预热阶段的倍数、预热的步数、预热结束后的网络）
     warmUpScheduler = GradualWarmupScheduler(
         optimizer=optimizer, multiplier=modelConfig["multiplier"],
         warm_epoch=modelConfig["epoch"] // 10, after_scheduler=cosineScheduler)
@@ -70,7 +68,7 @@ def train(modelConfig: Dict):
                     "LR": optimizer.state_dict()['param_groups'][0]["lr"]
                 })
                 # show the information of statistical train steps
-        # 退火法步进更新lr
+        # update the lr
         warmUpScheduler.step()
         torch.save(net_model.state_dict(), os.path.join(
             modelConfig["save_weight_dir"], 'ckpt_' + str(e) + "_.pt"))
@@ -80,7 +78,7 @@ def eval(modelConfig: Dict):
     # load model and evaluate
     with torch.no_grad():
         device = torch.device(modelConfig["device"])
-        # 测试阶段丢弃值设置为0
+        # in eval, set dropout = 0
         model = UNet(T=modelConfig["T"], ch=modelConfig["channel"], ch_mult=modelConfig["channel_mult"], attn=modelConfig["attn"],
                      num_res_blocks=modelConfig["num_res_blocks"], dropout=0.)
         ckpt = torch.load(os.path.join(
@@ -100,4 +98,5 @@ def eval(modelConfig: Dict):
         sampledImgs = sampledImgs * 0.5 + 0.5  # [0 ~ 1]
         save_image(sampledImgs, os.path.join(
             modelConfig["sampled_dir"],  modelConfig["sampledImgName"]), nrow=modelConfig["nrow"])
+
 
