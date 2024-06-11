@@ -34,7 +34,6 @@ class GaussianDiffusionTrainer(nn.Module):
         alphas = 1. - self.betas
         alphas_bar = torch.cumprod(alphas, dim=0)
 
-        # 根据t时刻的x计算公式，计算相关参数，分别是根号下的累乘以及根号下的1-累乘
         # In the t step. to calculate the parameter
         self.register_buffer(
             'sqrt_alphas_bar', torch.sqrt(alphas_bar))
