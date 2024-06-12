@@ -1,5 +1,3 @@
-
-
 import os
 from typing import Dict
 import numpy as np
@@ -18,6 +16,12 @@ from Scheduler import GradualWarmupScheduler
 
 
 def train(modelConfig: Dict):
+    """
+    This is a simple demo expriment from (https://github.com/zoubohao/DenoisingDiffusionProbabilityModel-ddpm-).
+    It just use the embedding layer to embed the label rather than using the classifering to change the model.
+    And in https://github.com/openai/guided-diffusion you will finde the code offered by OpenAI for 
+    Diffusion Models Beat GANs on Image Synthesis.
+    """
     device = torch.device(modelConfig["device"])
     # dataset
     dataset = CIFAR10(
