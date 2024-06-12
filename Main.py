@@ -3,6 +3,7 @@ from Diffusion.DDIM import eval_ddim
 import os
 os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 
+"""This file is for DDIM configuration."""
 def main(model_config = None):
     modelConfig = {
         "state": "eval_ddim",    # or eval or eval_ddim or train
