@@ -51,7 +51,6 @@ class ConditionalEmbedding(nn.Module):
         assert d_model % 2 == 0
         super().__init__()
         self.condEmbedding = nn.Sequential(
-            # 利用嵌入层
             nn.Embedding(num_embeddings=num_labels + 1, embedding_dim=d_model, padding_idx=0),
             nn.Linear(d_model, dim),
             Swish(),
